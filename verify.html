@@ -2,17 +2,47 @@
 <html>
 <head>
   <title>PandaMusic Verify</title>
+  <meta charset="UTF-8">
+  <style>
+    body { background:#0A0A0A; color:white; font-family:sans-serif; 
+           text-align:center; padding-top:100px; }
+    .icon { font-size:64px; }
+    .btn { display:inline-block; margin-top:30px; padding:14px 40px;
+           background:#E24B4A; color:white; text-decoration:none;
+           border-radius:10px; font-weight:bold; font-size:16px; }
+  </style>
+</head>
+<body>
+  <div class="icon">🐼</div>
+  <h2>PandaMusic</h2>
+  <p id="msg">Verifying your email...</p>
+  <div id="action"></div>
+
   <script>
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
-    if (token) {
-      window.location.href = 'pandamusic://verify?token=' + token;
+
+    if (!token) {
+      document.getElementById('msg').textContent = 'Invalid verification link.';
+    } else {
+      fetch('https://pandamusic-back.onrender.com/auth/verify?token=' + token)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            document.getElementById('msg').textContent = 
+              '✅ Email verified! You can now log in to Panda Music.';
+            document.getElementById('action').innerHTML = 
+              '<p style="color:#888;font-size:14px;">Open the Panda Music app and sign in.</p>';
+          } else {
+            document.getElementById('msg').textContent = 
+              '❌ ' + (data.message || 'Verification failed.');
+          }
+        })
+        .catch(() => {
+          document.getElementById('msg').textContent = 
+            '❌ Something went wrong. Please try again.';
+        });
     }
   </script>
-</head>
-<body style="background:#0A0A0A;color:white;font-family:sans-serif;text-align:center;padding-top:100px">
-  <h2>🐼 PandaMusic</h2>
-  <p>Verifying your email...</p>
-  <p>Opening app automatically...</p>
 </body>
 </html>
