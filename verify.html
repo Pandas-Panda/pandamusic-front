@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PandaMusic</title>
-  <meta http-equiv="refresh" content="3;url=pandamusic://verify">
+  <title>PandaMusic Verify</title>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      window.location.href = 'pandamusic://verify?token=' + token;
+    }
+  </script>
 </head>
 <body style="background:#0A0A0A;color:white;font-family:sans-serif;text-align:center;padding-top:100px">
   <h2>🐼 PandaMusic</h2>
