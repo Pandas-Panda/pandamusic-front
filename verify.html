@@ -1,48 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>PandaMusic Verify</title>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PandaMusic — Signing In</title>
   <style>
-    body { background:#0A0A0A; color:white; font-family:sans-serif; 
-           text-align:center; padding-top:100px; }
-    .icon { font-size:64px; }
-    .btn { display:inline-block; margin-top:30px; padding:14px 40px;
-           background:#E24B4A; color:white; text-decoration:none;
-           border-radius:10px; font-weight:bold; font-size:16px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0A0A;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      text-align: center;
+      padding: 40px 32px;
+      max-width: 400px;
+      width: 100%;
+    }
+    .panda { font-size: 64px; margin-bottom: 16px; }
+    h1 { color: #E24B4A; font-size: 24px; margin-bottom: 8px; }
+    p  { color: #888888; font-size: 15px; margin-bottom: 24px; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #2A2A2A;
+      border-top-color: #E24B4A;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 24px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status { font-size: 14px; color: #888888; }
+    .error  { color: #E24B4A; }
+    .success { color: #4CAF50; }
   </style>
 </head>
 <body>
-  <div class="icon">🐼</div>
-  <h2>PandaMusic</h2>
-  <p id="msg">Verifying your email...</p>
-  <div id="action"></div>
+  <div class="card">
+    <div class="panda">🐼</div>
+    <h1>PandaMusic</h1>
+    <p id="message">Verifying your magic link...</p>
+    <div class="spinner" id="spinner"></div>
+    <p class="status" id="status"></p>
+  </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
+    const BACKEND = 'https://pandamusic-back.onrender.com';
+    const DEEP_LINK_SCHEME = 'pandamusic://auth';
 
-    if (!token) {
-      document.getElementById('msg').textContent = 'Invalid verification link.';
-    } else {
-      fetch('https://pandamusic-back.onrender.com/auth/verify?token=' + token)
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            document.getElementById('msg').textContent = 
-              '✅ Email verified! You can now log in to Panda Music.';
-            document.getElementById('action').innerHTML = 
-              '<p style="color:#888;font-size:14px;">Open the Panda Music app and sign in.</p>';
-          } else {
-            document.getElementById('msg').textContent = 
-              '❌ ' + (data.message || 'Verification failed.');
-          }
-        })
-        .catch(() => {
-          document.getElementById('msg').textContent = 
-            '❌ Something went wrong. Please try again.';
-        });
+    async function verify() {
+      const params = new URLSearchParams(window.location.search);
+      const token  = params.get('token');
+
+      if (!token) {
+        showError('Invalid link — no token found.');
+        return;
+      }
+
+      try {
+        const res  = await fetch(`${BACKEND}/auth/verify-magic-link?token=${encodeURIComponent(token)}`);
+        const data = await res.json();
+
+        if (!data.success) {
+          showError(data.error || 'Verification failed. Please try again.');
+          return;
+        }
+
+        // Build deep link with tokens
+        const deepLink = `${DEEP_LINK_SCHEME}?jwt=${encodeURIComponent(data.token)}&refresh=${encodeURIComponent(data.refresh_token)}&is_new=${data.is_new_user}`;
+
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('message').textContent   = 'Signed in! Opening PandaMusic...';
+        document.getElementById('status').innerHTML      = '<span class="success">✓ Verified successfully</span>';
+
+        // Redirect to app via deep link
+        window.location.href = deepLink;
+
+        // Fallback message after 3 seconds if app doesn't open
+        setTimeout(() => {
+          document.getElementById('status').innerHTML =
+            'If the app didn\'t open, please open PandaMusic manually.';
+        }, 3000);
+
+      } catch (err) {
+        showError('Network error. Please check your connection and try again.');
+      }
     }
+
+    function showError(msg) {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('message').textContent   = 'Something went wrong';
+      document.getElementById('status').innerHTML      = `<span class="error">${msg}</span>`;
+    }
+
+    verify();
   </script>
 </body>
 </html>
